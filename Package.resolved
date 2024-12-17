@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/pipecat-ai/pipecat-client-ios.git",
         "state": {
           "branch": null,
-          "revision": "fd8418559b6f885af7662b78fabdb0e2f08fbb1a",
-          "version": "0.3.0"
+          "revision": "d2d9946cf93f1e89290c724caa1631cffa439524",
+          "version": "0.3.1"
         }
       }
     ]
