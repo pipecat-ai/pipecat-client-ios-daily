@@ -4,7 +4,7 @@ URL_BASE_PATH=$1
 rm -rf ./tmpDocs
 
 # create the docs
-xcodebuild docbuild -scheme 'RTVIClientIOSDaily' -destination "generic/platform=iOS" -derivedDataPath ./tmpDocs
+xcodebuild docbuild -scheme 'PipecatClientIOSDaily' -destination "generic/platform=iOS" -derivedDataPath ./tmpDocs
 
 # convert the doc archive for static hosting
 $(xcrun --find docc) process-archive transform-for-static-hosting \
