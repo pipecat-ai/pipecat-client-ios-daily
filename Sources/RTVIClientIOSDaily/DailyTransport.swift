@@ -82,8 +82,12 @@ public class DailyTransport: Transport {
         self.devicesInitialized = true
     }
 
-    public func connect(authBundle: RTVIClientIOS.AuthBundle) async throws {
+    public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
+        
+        guard let authBundle else {
+            throw InvalidAuthBundleError()
+        }
 
         let dailyBundle: DailyTransportAuthBundle
         do {
