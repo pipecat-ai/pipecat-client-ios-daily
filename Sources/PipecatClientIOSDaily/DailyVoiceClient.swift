@@ -1,5 +1,5 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 
 /// An RTVI client. Connects to a Daily Bots backend and handles bidirectional audio and video streaming
 @MainActor

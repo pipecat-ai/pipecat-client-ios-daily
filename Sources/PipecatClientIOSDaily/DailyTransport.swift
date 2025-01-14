@@ -1,14 +1,14 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 import Daily
 
 /// An RTVI transport to connect with Daily.
 public class DailyTransport: Transport {
     private var callClient: CallClient?
-    private var voiceClientOptions: RTVIClientIOS.RTVIClientOptions
+    private var voiceClientOptions: PipecatClientIOS.RTVIClientOptions
 
     private var devicesInitialized: Bool = false
-    private var botUser: RTVIClientIOS.Participant?
+    private var botUser: PipecatClientIOS.Participant?
     private var _selectedCam: MediaDeviceInfo?
     private var _selectedMic: MediaDeviceInfo?
     private var clientReady: Bool = false
@@ -42,7 +42,7 @@ public class DailyTransport: Transport {
         }
     }
 
-    required public init(options: RTVIClientIOS.RTVIClientOptions) {
+    required public init(options: PipecatClientIOS.RTVIClientOptions) {
         self.voiceClientOptions = options
         self.callClient = CallClient()
         self.callClient?.delegate = self
@@ -82,7 +82,7 @@ public class DailyTransport: Transport {
         self.devicesInitialized = true
     }
 
-    public func connect(authBundle: RTVIClientIOS.AuthBundle?) async throws {
+    public func connect(authBundle: PipecatClientIOS.AuthBundle?) async throws {
         self.setState(state: .connecting)
         
         guard let authBundle else {
@@ -134,19 +134,19 @@ public class DailyTransport: Transport {
         self._expiry = nil
     }
 
-    public func getAllMics() -> [RTVIClientIOS.MediaDeviceInfo] {
+    public func getAllMics() -> [PipecatClientIOS.MediaDeviceInfo] {
         self.callClient?.availableDevices.microphone.compactMap { $0.toRtvi() } ?? []
     }
 
-    public func getAllCams() -> [RTVIClientIOS.MediaDeviceInfo] {
+    public func getAllCams() -> [PipecatClientIOS.MediaDeviceInfo] {
         self.callClient?.availableDevices.camera.compactMap { $0.toRtvi() } ?? []
     }
 
-    public func updateMic(micId: RTVIClientIOS.MediaDeviceId) async throws {
+    public func updateMic(micId: PipecatClientIOS.MediaDeviceId) async throws {
         try await self.callClient?.setPreferredAudioDevice(AudioDeviceType.init(deviceID: micId.id))
     }
 
-    public func updateCam(camId: RTVIClientIOS.MediaDeviceId) async throws {
+    public func updateCam(camId: PipecatClientIOS.MediaDeviceId) async throws {
         _ = try await self.callClient?.updateInputs(
             .set(InputSettingsUpdate(
                 camera: .set(CameraInputSettingsUpdate(
@@ -158,14 +158,14 @@ public class DailyTransport: Transport {
         )
     }
 
-    public func selectedMic() -> RTVIClientIOS.MediaDeviceInfo? {
+    public func selectedMic() -> PipecatClientIOS.MediaDeviceInfo? {
         guard let deviceId = self.callClient?.inputs.microphone.settings.deviceID else {
             return nil
         }
         return self.getAllMics().first { $0.id.id == deviceId }
     }
 
-    public func selectedCam() -> RTVIClientIOS.MediaDeviceInfo? {
+    public func selectedCam() -> PipecatClientIOS.MediaDeviceInfo? {
         guard let deviceId = self.callClient?.inputs.camera.settings.deviceID else {
             return nil
         }
@@ -188,7 +188,7 @@ public class DailyTransport: Transport {
         self.callClient?.inputs.microphone.isEnabled ?? false
     }
 
-    public func sendMessage(message: RTVIClientIOS.RTVIMessageOutbound) throws {
+    public func sendMessage(message: PipecatClientIOS.RTVIMessageOutbound) throws {
         let messageToSend = try JSONEncoder().encode(message);
         //print("Sending app message \(String(data: messageToSend, encoding: .utf8))")
         self.callClient?.sendAppMessage(json: messageToSend, to: .all, completion: nil)
@@ -198,11 +198,11 @@ public class DailyTransport: Transport {
         return [.connected, .ready].contains(self._state)
     }
 
-    public func state() -> RTVIClientIOS.TransportState {
+    public func state() -> PipecatClientIOS.TransportState {
         self._state
     }
 
-    public func setState(state: RTVIClientIOS.TransportState) {
+    public func setState(state: PipecatClientIOS.TransportState) {
         if(state == .connected && self._state == .ready) {
             // Sometimes we are receiving the ready state from the bot even before we receive the connected state
             // So, since the ready should be the last state, we are just ignoring it for now
@@ -212,7 +212,7 @@ public class DailyTransport: Transport {
         self.delegate?.onTransportStateChanged(state: self._state)
     }
 
-    public func tracks() -> RTVIClientIOS.Tracks? {
+    public func tracks() -> PipecatClientIOS.Tracks? {
         guard let callClient = self.callClient else {
             return nil
         }
