@@ -11,23 +11,23 @@ let package = Package(
     products: [
         .library(
             name: "PipecatClientIOSDaily",
-            targets: ["RTVIClientIOSDaily"]),
+            targets: ["PipecatClientIOSDaily"]),
     ],
     dependencies: [
         // Local dependency
-//        .package(path: "../pipecat-client-ios"),
-         .package(url: "https://github.com/pipecat-ai/pipecat-client-ios.git", from: "0.3.1"),
+        //.package(path: "../pipecat-client-ios"),
+        .package(url: "https://github.com/pipecat-ai/pipecat-client-ios.git", from: "0.3.1"),
         .package(url: "https://github.com/daily-co/daily-client-ios.git", from: "0.23.0")
     ],
     targets: [
         .target(
-            name: "RTVIClientIOSDaily",
+            name: "PipecatClientIOSDaily",
             dependencies: [
                 .product(name: "PipecatClientIOS", package: "pipecat-client-ios"),
                 .product(name: "Daily", package: "daily-client-ios")
             ]),
         .testTarget(
-            name: "RTVIClientIOSDailyTests",
-            dependencies: ["RTVIClientIOSDaily"]),
+            name: "PipecatClientIOSDailyTests",
+            dependencies: ["PipecatClientIOSDaily"]),
     ]
 )
