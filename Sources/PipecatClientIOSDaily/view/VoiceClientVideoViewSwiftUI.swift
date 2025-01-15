@@ -1,6 +1,6 @@
 import SwiftUI
 import Daily
-import RTVIClientIOS
+import PipecatClientIOS
 
 /// A wrapper for `VoiceClientVideoView` that exposes the video size via a `@Binding`.
 public struct VoiceClientVideoViewSwiftUI: UIViewRepresentable {

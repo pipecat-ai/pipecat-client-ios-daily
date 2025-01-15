@@ -1,5 +1,5 @@
 import Daily
-import RTVIClientIOS
+import PipecatClientIOS
 
 final class VideoTrackRegistry {
 

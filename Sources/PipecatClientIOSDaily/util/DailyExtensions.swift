@@ -1,5 +1,5 @@
 import Foundation
-import RTVIClientIOS
+import PipecatClientIOS
 import Daily
 
 extension Daily.AudioTrack {
@@ -15,16 +15,16 @@ extension Daily.VideoTrack {
 }
 
 extension Daily.ParticipantID {
-    func toRtvi() -> RTVIClientIOS.ParticipantId {
-        return RTVIClientIOS.ParticipantId(
+    func toRtvi() -> PipecatClientIOS.ParticipantId {
+        return PipecatClientIOS.ParticipantId(
             id: self.uuidString
         )
     }
 }
 
 extension Daily.Participant {
-    func toRtvi() -> RTVIClientIOS.Participant {
-        return RTVIClientIOS.Participant(
+    func toRtvi() -> PipecatClientIOS.Participant {
+        return PipecatClientIOS.Participant(
             id: self.id.toRtvi(),
             name: self.info.username,
             local: self.info.isLocal
@@ -33,7 +33,7 @@ extension Daily.Participant {
 }
 
 extension Daily.Device {
-    func toRtvi() -> RTVIClientIOS.MediaDeviceInfo {
-        return RTVIClientIOS.MediaDeviceInfo(id: MediaDeviceId(id: self.deviceID), name: self.label)
+    func toRtvi() -> PipecatClientIOS.MediaDeviceInfo {
+        return PipecatClientIOS.MediaDeviceInfo(id: MediaDeviceId(id: self.deviceID), name: self.label)
     }
 }

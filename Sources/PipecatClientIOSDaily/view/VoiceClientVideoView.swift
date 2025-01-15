@@ -1,5 +1,5 @@
 import Daily
-import RTVIClientIOS
+import PipecatClientIOS
 
 /// Overrides the Daily [VideoView] to allow [MediaTrackId] tracks from the VoiceClient to be rendered.
 public final class VoiceClientVideoView: VideoView {
