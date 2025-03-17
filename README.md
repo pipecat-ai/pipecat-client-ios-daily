@@ -1,6 +1,6 @@
 # Pipecat iOS SDK with Daily Transport
 
-The [Pipecat](https://github.com/pipecat-ai/) project uses [RTVI-AI](https://github.com/rtvi-ai/), an open standard for Real-Time Voice [and Video] Inference.
+The [Pipecat](https://github.com/pipecat-ai/) project uses RTVI, an open standard for Real-Time Voice [and Video] Inference.
 
 This library exports a VoiceClient that has the [Daily](https://www.daily.co/) transport associated.
 
@@ -59,10 +59,9 @@ try await rtviClientIOS.start()
 ```
 
 ## References
-- [RTVI-AI overview](https://github.com/rtvi-ai/).
-- [RTVI-AI reference docs](https://rtvi.mintlify.app/api-reference/introduction).
-- [rtvi-client-ios SDK docs](https://rtvi-client-ios-docs.vercel.app/RTVIClientIOS/documentation/rtviclientios).
-- [rtvi-client-ios-daily SDK docs](https://rtvi-client-ios-docs.vercel.app/RTVIClientIOSDaily/documentation/rtviclientiosdaily).
+- [Pipecat client iOS docs](https://docs.pipecat.ai/client/ios/introduction)
+- [Pipecat client iOS reference docs](https://docs-ios.pipecat.ai/PipecatClientIOS/documentation/pipecatclientios)
+- [Pipecat client iOS DailyTransport docs](https://docs.pipecat.ai/client/ios/transports/daily)
 
 ## Contributing
 
