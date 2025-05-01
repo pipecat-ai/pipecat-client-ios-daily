@@ -5,6 +5,10 @@ import Daily
 /// An RTVI transport to connect with Daily.
 public class DailyTransport: Transport {
     private var callClient: CallClient?
+    /// Expose the underlying Daily CallClient for direct SDK interaction (e.g. zoom, torch).
+    public var dailyCallClient: CallClient? {
+        return self.callClient
+    }
     private var voiceClientOptions: PipecatClientIOS.RTVIClientOptions
 
     private var devicesInitialized: Bool = false
