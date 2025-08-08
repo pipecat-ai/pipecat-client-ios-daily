@@ -17,7 +17,7 @@ let package = Package(
         // Local dependency
         //.package(path: "../pipecat-client-ios"),
         .package(url: "https://github.com/pipecat-ai/pipecat-client-ios.git", from: "0.3.6"),
-        .package(url: "https://github.com/daily-co/daily-client-ios.git", from: "0.23.0")
+        .package(url: "https://github.com/daily-co/daily-client-ios.git", from: "0.32.0")
     ],
     targets: [
         .target(
