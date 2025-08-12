@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = 'PipecatClientIOSDaily'
-  s.version      = '0.3.6'
+  s.version      = '0.3.7'
   s.summary      = 'Pipecat iOS client library with Daily WebRTC transport.'
   s.description  = <<-DESC
                     The Daily transport implementation enables real-time audio and video communication in your Pipecat iOS applications using Daily’s WebRTC infrastructure.
