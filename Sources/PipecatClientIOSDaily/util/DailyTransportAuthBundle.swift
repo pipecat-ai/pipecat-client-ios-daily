@@ -35,10 +35,7 @@ struct DailyTransportAuthBundle: Decodable {
         } else if let token = try? container.decode(String.self, forKey: .tokenAlt) {
             self.token = token
         } else {
-            throw DecodingError.keyNotFound(CodingKeys.roomUrl, DecodingError.Context(
-                codingPath: decoder.codingPath,
-                debugDescription: "No valid key found for token among: token, dailyToken"
-            ))
+            self.token = nil
         }
     }
 }
