@@ -3,14 +3,20 @@ import PipecatClientIOS
 import Daily
 
 extension Daily.AudioTrack {
-    func toRtvi() -> MediaTrackId {
-        return MediaTrackId(id: id)
+    func toRtvi() -> PipecatClientIOS.MediaStreamTrack {
+        return MediaStreamTrack(
+            id: MediaTrackId(id: id),
+            kind: .audio
+        )
     }
 }
 
 extension Daily.VideoTrack {
-    func toRtvi() -> MediaTrackId {
-        return MediaTrackId(id: id)
+    func toRtvi() -> PipecatClientIOS.MediaStreamTrack {
+        return MediaStreamTrack(
+            id: MediaTrackId(id: id),
+            kind: .video
+        )
     }
 }
 
