@@ -12,7 +12,7 @@ public class DailyTransport: Transport {
     private var voiceClientOptions: PipecatClientIOS.RTVIClientOptions
     
     private var devicesInitialized: Bool = false
-    private var botUser: PipecatClientIOS.Participant?
+    var botUser: PipecatClientIOS.Participant?
     private var _selectedCam: MediaDeviceInfo?
     private var _selectedMic: MediaDeviceInfo?
     private var clientReady: Bool = false
@@ -55,10 +55,15 @@ public class DailyTransport: Transport {
             // Nothing to do here, no tracks available yet
             return
         }
-        if( self._tracks != currentTracks ){
-            self._tracks = currentTracks
-            self.delegate?.onTracksUpdated(tracks: currentTracks)
+        
+        if let previousTracks = self._tracks {
+            self.handleTrackChanges(previous: previousTracks, current: currentTracks)
+        } else {
+            // First time tracks are available, notify all starting tracks
+            self.handleInitialTracks(tracks: currentTracks)
         }
+        
+        self._tracks = currentTracks
     }
     
     public func initDevices() async throws {
@@ -224,26 +229,40 @@ public class DailyTransport: Transport {
         
         VideoTrackRegistry.clearRegistry()
         
-        let localVideoTrackId = local.media?.camera.track?.toRtvi()
+        let localVideoTrack = local.media?.camera.track?.toRtvi()
         // Registering the track so we can retrieve it later inside the VoiceClientVideoView
-        if let localVideoTrackId = localVideoTrackId {
-            VideoTrackRegistry.registerTrack(originalTrack: local.media!.camera.track!, mediaTrackId: localVideoTrackId)
+        if let localVideoTrack = localVideoTrack {
+            VideoTrackRegistry.registerTrack(originalTrack: local.media!.camera.track!, mediaTrackId: localVideoTrack.id)
+        }
+        let localScreenVideoTrack = local.media?.screenVideo.track?.toRtvi()
+        // Registering the track so we can retrieve it later inside the VoiceClientVideoView
+        if let localScreenVideoTrack = localScreenVideoTrack {
+            VideoTrackRegistry.registerTrack(originalTrack: local.media!.screenVideo.track!, mediaTrackId: localScreenVideoTrack.id)
         }
         
-        let botVideoTrackId = bot?.media?.camera.track?.toRtvi()
+        let botVideoTrack = bot?.media?.camera.track?.toRtvi()
         // Registering the track so we can retrieve it later inside the VoiceClientVideoView
-        if let botVideoTrackId = botVideoTrackId {
-            VideoTrackRegistry.registerTrack(originalTrack: bot!.media!.camera.track!, mediaTrackId: botVideoTrackId)
+        if let botVideoTrack = botVideoTrack {
+            VideoTrackRegistry.registerTrack(originalTrack: bot!.media!.camera.track!, mediaTrackId: botVideoTrack.id)
+        }
+        let botScreenVideoTrack = bot?.media?.screenVideo.track?.toRtvi()
+        // Registering the track so we can retrieve it later inside the VoiceClientVideoView
+        if let botScreenVideoTrack = botScreenVideoTrack {
+            VideoTrackRegistry.registerTrack(originalTrack: bot!.media!.screenVideo.track!, mediaTrackId: botScreenVideoTrack.id)
         }
         
         return Tracks(
             local: ParticipantTracks(
                 audio: local.media?.microphone.track?.toRtvi(),
-                video: localVideoTrackId
+                video: localVideoTrack,
+                screenAudio: local.media?.screenAudio.track?.toRtvi(),
+                screenVideo: localScreenVideoTrack
             ),
             bot: ParticipantTracks(
                 audio: bot?.media?.microphone.track?.toRtvi(),
-                video: botVideoTrackId
+                video: botVideoTrack,
+                screenAudio: bot?.media?.screenAudio.track?.toRtvi(),
+                screenVideo: botScreenVideoTrack
             )
         )
     }
@@ -277,7 +296,7 @@ extension DailyTransport: CallClientDelegate {
             do {
                 try self.sendMessage(message: RTVIMessageOutbound.clientReady())
             } catch {
-                self.delegate?.onError(message: "Failed to send message that the client is ready \(error)")
+                self.delegate?.onError(message: .errorMessage(error: "Failed to send message that the client is ready \(error)"))
             }
         }
     }
@@ -293,7 +312,7 @@ extension DailyTransport: CallClientDelegate {
     public func callClient(_ callClient: Daily.CallClient, localAudioLevel audioLevel: Float) {
         // We are using the events that we receive from the bot for this case, since it seems more reliable
         // self.localAudioLevelProcessor.onLevelChanged(level: audioLevel)
-        self.delegate?.onUserAudioLevel(level: audioLevel)
+        self.delegate?.onLocalAudioLevel(level: audioLevel)
     }
     
     public func callClient(_ callClient: Daily.CallClient, remoteParticipantsAudioLevel participantsAudioLevel: [Daily.ParticipantID : Float]) {
