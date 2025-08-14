@@ -36,13 +36,10 @@ public class DailyTransport: Transport {
     
     // For the bot, when it is not speaking it looks like we always receive "0"
     private lazy var botAudioLevelProcessor = AudioLevelProcessor (threshold: 0.001) { isSpeaking in
-        guard let botUser = self.botUser else {
-            return
-        }
         if isSpeaking {
-            self.delegate?.onBotStartedSpeaking(participant: botUser)
+            self.delegate?.onBotStartedSpeaking()
         } else {
-            self.delegate?.onBotStoppedSpeaking(participant: botUser)
+            self.delegate?.onBotStoppedSpeaking()
         }
     }
     
