@@ -2,10 +2,10 @@ import Foundation
 
 /// Helper class to identify when the participant is speaking based on the audio level.
 class AudioLevelProcessor {
-    
+
     // callback
     private let onIsSpeaking: (Bool) -> Void
-    
+
     private let threshold: Float
     private let silenceDelayMs: TimeInterval
     private var speaking = false

@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/daily-co/daily-client-ios.git",
         "state": {
           "branch": null,
-          "revision": "d0f4f54cadbfd5b69c82b8a56f14ad1c7e91e248",
-          "version": "0.24.0"
+          "revision": "7284d0dc959ef009610f0267d4078dad24f8a038",
+          "version": "0.33.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/pipecat-ai/pipecat-client-ios.git",
         "state": {
           "branch": null,
-          "revision": "f92b5e68e56a8311f7d8ead68a7a5674843cbc40",
-          "version": "0.3.6"
+          "revision": "2d64b9c7c6bf4ec2343d46338936a83686c5afa5",
+          "version": "1.0.0"
         }
       }
     ]
