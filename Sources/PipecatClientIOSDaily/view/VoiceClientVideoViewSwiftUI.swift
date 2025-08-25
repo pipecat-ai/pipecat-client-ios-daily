@@ -4,7 +4,7 @@ import PipecatClientIOS
 
 /// A wrapper for `VoiceClientVideoView` that exposes the video size via a `@Binding`.
 public struct VoiceClientVideoViewSwiftUI: UIViewRepresentable {
-    
+
     /// The current size of the video being rendered by this view.
     @Binding private(set) var videoSize: CGSize
 

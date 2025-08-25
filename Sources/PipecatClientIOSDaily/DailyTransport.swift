@@ -9,21 +9,20 @@ public class DailyTransport: Transport {
     public var dailyCallClient: CallClient? {
         return self.callClient
     }
-    private var voiceClientOptions: PipecatClientIOS.RTVIClientOptions
+    private var voiceClientOptions: PipecatClientIOS.PipecatClientOptions?
 
     private var devicesInitialized: Bool = false
-    private var botUser: PipecatClientIOS.Participant?
+    var botUser: PipecatClientIOS.Participant?
     private var _selectedCam: MediaDeviceInfo?
     private var _selectedMic: MediaDeviceInfo?
     private var clientReady: Bool = false
     private var _tracks: Tracks?
-    private var _expiry: Int? = nil
 
     // callback
-    public var onMessage: ((RTVIMessageInbound) -> Void)? = nil
+    public var onMessage: ((RTVIMessageInbound) -> Void)?
 
     /// The object that acts as the delegate of the voice client.
-    public weak var delegate: RTVIClientDelegate? = nil
+    public weak var delegate: PipecatClientDelegate?
     private var _state: TransportState = .disconnected
 
     private lazy var localAudioLevelProcessor = AudioLevelProcessor { isSpeaking in
@@ -35,21 +34,21 @@ public class DailyTransport: Transport {
     }
 
     // For the bot, when it is not speaking it looks like we always receive "0"
-    private lazy var botAudioLevelProcessor = AudioLevelProcessor (threshold: 0.001) { isSpeaking in
-        guard let botUser = self.botUser else {
-            return
-        }
+    private lazy var botAudioLevelProcessor = AudioLevelProcessor(threshold: 0.001) { isSpeaking in
         if isSpeaking {
-            self.delegate?.onBotStartedSpeaking(participant: botUser)
+            self.delegate?.onBotStartedSpeaking()
         } else {
-            self.delegate?.onBotStoppedSpeaking(participant: botUser)
+            self.delegate?.onBotStoppedSpeaking()
         }
     }
 
-    required public init(options: PipecatClientIOS.RTVIClientOptions) {
-        self.voiceClientOptions = options
+    required public init() {
         self.callClient = CallClient()
         self.callClient?.delegate = self
+    }
+
+    public func initialize(options: PipecatClientOptions) {
+        self.voiceClientOptions = options
     }
 
     func updateBotUserAndTracks() {
@@ -58,22 +57,27 @@ public class DailyTransport: Transport {
             // Nothing to do here, no tracks available yet
             return
         }
-        if( self._tracks != currentTracks ){
-            self._tracks = currentTracks
-            self.delegate?.onTracksUpdated(tracks: currentTracks)
+
+        if let previousTracks = self._tracks {
+            self.handleTrackChanges(previous: previousTracks, current: currentTracks)
+        } else {
+            // First time tracks are available, notify all starting tracks
+            self.handleInitialTracks(tracks: currentTracks)
         }
+
+        self._tracks = currentTracks
     }
 
     public func initDevices() async throws {
-        if (self.devicesInitialized) {
+        if self.devicesInitialized {
             // There is nothing to do in this case
             return
         }
         self.setState(state: .initializing)
 
         // trigger the initial status
-        self.delegate?.onAvailableCamsUpdated(cams: self.getAllCams());
-        self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics());
+        self.delegate?.onAvailableCamsUpdated(cams: self.getAllCams())
+        self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics())
         self._selectedCam = self.selectedCam()
         self.delegate?.onCamUpdated(cam: self._selectedCam)
         self._selectedMic = self.selectedMic()
@@ -86,56 +90,53 @@ public class DailyTransport: Transport {
         self.devicesInitialized = true
     }
 
-    public func connect(authBundle: PipecatClientIOS.AuthBundle?) async throws {
+    public func connect(transportParams: TransportConnectionParams?) async throws {
         self.setState(state: .connecting)
-        
-        guard let authBundle else {
-            throw InvalidAuthBundleError()
+
+        guard let dailyParams = transportParams as? DailyTransportConnectionParams else {
+            throw InvalidTransportParamsError()
         }
 
-        let dailyBundle: DailyTransportAuthBundle
-        do {
-            let decoder = JSONDecoder()
-            dailyBundle = try decoder.decode(DailyTransportAuthBundle.self, from: Data(authBundle.data.utf8))
-        } catch {
-            throw InvalidAuthBundleError(underlyingError: error)
-        }
-
-        guard let roomURL = URL(string: dailyBundle.roomUrl) else {
-            throw InvalidAuthBundleError()
+        guard let roomURL = URL(string: dailyParams.roomUrl) else {
+            throw InvalidTransportParamsError()
         }
 
         let meetingToken: MeetingToken? = {
-            if let token = dailyBundle.token {
+            if let token = dailyParams.token {
                 MeetingToken(stringValue: token)
             } else {
                 nil
             }
         }()
-        
-        let joinSettings = ClientSettingsUpdate(inputs: .set(
-            camera: .set(
-                isEnabled: .set(voiceClientOptions.enableCam)
-            ),
-            microphone: .set(
-                isEnabled: .set(voiceClientOptions.enableMic)
+
+        let joinSettings: ClientSettingsUpdate
+        if let _joinSetting = dailyParams.joinSettings {
+            joinSettings = _joinSetting.mergingCameraAndMicrophoneSettings(
+                enableCam: voiceClientOptions!.enableCam,
+                enableMic: voiceClientOptions!.enableMic
             )
-        ))
-        let joinData = try await self.callClient?.join(url: roomURL, token: meetingToken, settings: joinSettings)
-        let callConfig = joinData?.callConfig
-        self._expiry = callConfig.flatMap { config in
-            [config.roomExpiration, config.tokenExpiration].compactMap { $0 }.min()
+        } else {
+            joinSettings = ClientSettingsUpdate(
+                inputs: .set(
+                    camera: .set(
+                        isEnabled: .set(voiceClientOptions!.enableCam)
+                    ),
+                    microphone: .set(
+                        isEnabled: .set(voiceClientOptions!.enableMic)
+                    )
+                )
+            )
         }
+        try await self.callClient?.join(url: roomURL, token: meetingToken, settings: joinSettings)
     }
 
-    public func disconnect() async throws{
+    public func disconnect() async throws {
         try await self.callClient?.stopLocalAudioLevelObserver()
         try await self.callClient?.stopRemoteParticipantsAudioLevelObserver()
         try await self.callClient?.leave()
         self.devicesInitialized = false
         self._selectedCam = nil
         self._selectedMic = nil
-        self._expiry = nil
     }
 
     public func getAllMics() -> [PipecatClientIOS.MediaDeviceInfo] {
@@ -151,15 +152,22 @@ public class DailyTransport: Transport {
     }
 
     public func updateCam(camId: PipecatClientIOS.MediaDeviceId) async throws {
-        _ = try await self.callClient?.updateInputs(
-            .set(InputSettingsUpdate(
-                camera: .set(CameraInputSettingsUpdate(
-                    settings: .set(VideoMediaTrackSettingsUpdate(
-                        deviceID: .set(MediaTrackDeviceID(camId.id))
-                    ))
-                ))
-            ))
-        )
+        _ = try await self.callClient?
+            .updateInputs(
+                .set(
+                    InputSettingsUpdate(
+                        camera: .set(
+                            CameraInputSettingsUpdate(
+                                settings: .set(
+                                    VideoMediaTrackSettingsUpdate(
+                                        deviceID: .set(MediaTrackDeviceID(camId.id))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
     }
 
     public func selectedMic() -> PipecatClientIOS.MediaDeviceInfo? {
@@ -177,11 +185,11 @@ public class DailyTransport: Transport {
     }
 
     public func enableMic(enable: Bool) async throws {
-        try await self.callClient?.setInputsEnabled([.microphone : enable])
+        try await self.callClient?.setInputsEnabled([.microphone: enable])
     }
 
     public func enableCam(enable: Bool) async throws {
-        try await self.callClient?.setInputsEnabled([.camera : enable])
+        try await self.callClient?.setInputsEnabled([.camera: enable])
     }
 
     public func isCamEnabled() -> Bool {
@@ -193,13 +201,10 @@ public class DailyTransport: Transport {
     }
 
     public func sendMessage(message: PipecatClientIOS.RTVIMessageOutbound) throws {
-        let messageToSend = try JSONEncoder().encode(message);
-        //print("Sending app message \(String(data: messageToSend, encoding: .utf8))")
+        let messageToSend = try JSONEncoder().encode(message)
+        // For testing only
+        // print("Sending app message \(String(data: messageToSend, encoding: .utf8))")
         self.callClient?.sendAppMessage(json: messageToSend, to: .all, completion: nil)
-    }
-    
-    public func isConnected() -> Bool {
-        return [.connected, .ready].contains(self._state)
     }
 
     public func state() -> PipecatClientIOS.TransportState {
@@ -207,7 +212,7 @@ public class DailyTransport: Transport {
     }
 
     public func setState(state: PipecatClientIOS.TransportState) {
-        if(state == .connected && self._state == .ready) {
+        if state == .connected && self._state == .ready {
             // Sometimes we are receiving the ready state from the bot even before we receive the connected state
             // So, since the ready should be the last state, we are just ignoring it for now
             return
@@ -224,41 +229,60 @@ public class DailyTransport: Transport {
 
         let local = participants.local
         let bot = participants.all.values.first { !$0.info.isLocal }
-        
+
         VideoTrackRegistry.clearRegistry()
-        
-        let localVideoTrackId = local.media?.camera.track?.toRtvi()
+
+        let localVideoTrack = local.media?.camera.track?.toRtvi()
         // Registering the track so we can retrieve it later inside the VoiceClientVideoView
-        if let localVideoTrackId = localVideoTrackId {
-            VideoTrackRegistry.registerTrack(originalTrack: local.media!.camera.track!, mediaTrackId: localVideoTrackId)
+        if let localVideoTrack = localVideoTrack {
+            VideoTrackRegistry.registerTrack(
+                originalTrack: local.media!.camera.track!,
+                mediaTrackId: localVideoTrack.id
+            )
         }
-        
-        let botVideoTrackId = bot?.media?.camera.track?.toRtvi()
+        let localScreenVideoTrack = local.media?.screenVideo.track?.toRtvi()
         // Registering the track so we can retrieve it later inside the VoiceClientVideoView
-        if let botVideoTrackId = botVideoTrackId {
-            VideoTrackRegistry.registerTrack(originalTrack: bot!.media!.camera.track!, mediaTrackId: botVideoTrackId)
+        if let localScreenVideoTrack = localScreenVideoTrack {
+            VideoTrackRegistry.registerTrack(
+                originalTrack: local.media!.screenVideo.track!,
+                mediaTrackId: localScreenVideoTrack.id
+            )
+        }
+
+        let botVideoTrack = bot?.media?.camera.track?.toRtvi()
+        // Registering the track so we can retrieve it later inside the VoiceClientVideoView
+        if let botVideoTrack = botVideoTrack {
+            VideoTrackRegistry.registerTrack(originalTrack: bot!.media!.camera.track!, mediaTrackId: botVideoTrack.id)
+        }
+        let botScreenVideoTrack = bot?.media?.screenVideo.track?.toRtvi()
+        // Registering the track so we can retrieve it later inside the VoiceClientVideoView
+        if let botScreenVideoTrack = botScreenVideoTrack {
+            VideoTrackRegistry.registerTrack(
+                originalTrack: bot!.media!.screenVideo.track!,
+                mediaTrackId: botScreenVideoTrack.id
+            )
         }
 
         return Tracks(
             local: ParticipantTracks(
                 audio: local.media?.microphone.track?.toRtvi(),
-                video: localVideoTrackId
+                video: localVideoTrack,
+                screenAudio: local.media?.screenAudio.track?.toRtvi(),
+                screenVideo: localScreenVideoTrack
             ),
             bot: ParticipantTracks(
                 audio: bot?.media?.microphone.track?.toRtvi(),
-                video: botVideoTrackId
+                video: botVideoTrack,
+                screenAudio: bot?.media?.screenAudio.track?.toRtvi(),
+                screenVideo: botScreenVideoTrack
             )
         )
     }
-    
+
     public func release() {
         VideoTrackRegistry.clearRegistry()
         // It should automatically trigger deinit inside CallClient
         self.callClient = nil
-    }
-    
-    public func expiry() -> Int? {
-        self._expiry
     }
 
 }
@@ -268,31 +292,32 @@ extension DailyTransport: CallClientDelegate {
     public func callClient(_ callClient: CallClient, participantJoined participant: Daily.Participant) {
         self.delegate?.onParticipantJoined(participant: participant.toRtvi())
         self.updateBotUserAndTracks()
-        if (!participant.info.isLocal && self.botUser != nil){
+        if !participant.info.isLocal && self.botUser != nil {
             self.delegate?.onBotConnected(participant: self.botUser!)
         }
     }
 
     public func callClient(_ callClient: CallClient, participantUpdated participant: Daily.Participant) {
         self.updateBotUserAndTracks()
-        if(!self.clientReady && !participant.info.isLocal && participant.media?.microphone.state == .playable) {
+        if !self.clientReady && !participant.info.isLocal && participant.media?.microphone.state == .playable {
             self.clientReady = true
-            let clientReadyMessage = RTVIMessageOutbound(
-                type: RTVIMessageOutbound.MessageType.CLIENT_READY,
-                data: nil
-            )
             do {
-                try self.sendMessage(message: clientReadyMessage)
+                try self.sendMessage(message: RTVIMessageOutbound.clientReady())
             } catch {
-                self.delegate?.onError(message: "Failed to send message that the client is ready \(error)")
+                self.delegate?
+                    .onError(message: .errorMessage(error: "Failed to send message that the client is ready \(error)"))
             }
         }
     }
 
-    public func callClient(_ callClient: CallClient, participantLeft participant: Daily.Participant, withReason reason: ParticipantLeftReason) {
+    public func callClient(
+        _ callClient: CallClient,
+        participantLeft participant: Daily.Participant,
+        withReason reason: ParticipantLeftReason
+    ) {
         self.delegate?.onParticipantLeft(participant: participant.toRtvi())
         self.updateBotUserAndTracks()
-        if(!participant.info.isLocal && self.botUser == nil){
+        if !participant.info.isLocal && self.botUser == nil {
             self.delegate?.onBotDisconnected(participant: participant.toRtvi())
         }
     }
@@ -300,10 +325,13 @@ extension DailyTransport: CallClientDelegate {
     public func callClient(_ callClient: Daily.CallClient, localAudioLevel audioLevel: Float) {
         // We are using the events that we receive from the bot for this case, since it seems more reliable
         // self.localAudioLevelProcessor.onLevelChanged(level: audioLevel)
-        self.delegate?.onUserAudioLevel(level: audioLevel)
+        self.delegate?.onLocalAudioLevel(level: audioLevel)
     }
 
-    public func callClient(_ callClient: Daily.CallClient, remoteParticipantsAudioLevel participantsAudioLevel: [Daily.ParticipantID : Float]) {
+    public func callClient(
+        _ callClient: Daily.CallClient,
+        remoteParticipantsAudioLevel participantsAudioLevel: [Daily.ParticipantID: Float]
+    ) {
         participantsAudioLevel.forEach { id, level in
             let rtviId = id.toRtvi()
             if botUser?.id == rtviId {
@@ -315,11 +343,13 @@ extension DailyTransport: CallClientDelegate {
 
     public func callClient(_ callClient: CallClient, appMessageAsJson jsonData: Data, from participantID: ParticipantID) {
         do {
+            // For testing only
             // print("Received app message \(String(data: jsonData, encoding: .utf8))")
-            let appMessage = try JSONDecoder().decode(
-                RTVIMessageInbound.self,
-                from: jsonData
-            )
+            let appMessage = try JSONDecoder()
+                .decode(
+                    RTVIMessageInbound.self,
+                    from: jsonData
+                )
             self.onMessage?(appMessage)
         } catch {
             // Ignoring it, not an RTVI message
@@ -327,12 +357,12 @@ extension DailyTransport: CallClientDelegate {
     }
 
     public func callClient(_ callClient: CallClient, callStateUpdated state: CallState) {
-        if (state == .left) {
+        if state == .left {
             self.setState(state: .disconnected)
             self.delegate?.onDisconnected()
             self.clientReady = false
-        } else if (state == .joined) {
-            if (self.state() != .disconnecting){
+        } else if state == .joined {
+            if self.state() != .disconnecting {
                 self.setState(state: .connected)
                 self.delegate?.onConnected()
             }
@@ -340,20 +370,21 @@ extension DailyTransport: CallClientDelegate {
     }
 
     public func callClient(_ callClient: CallClient, availableDevicesUpdated availableDevices: Devices) {
-        self.delegate?.onAvailableCamsUpdated(cams: self.getAllCams());
-        self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics());
+        self.delegate?.onAvailableCamsUpdated(cams: self.getAllCams())
+        self.delegate?.onAvailableMicsUpdated(mics: self.getAllMics())
+        self.delegate?.onAvailableSpeakersUpdated(speakers: self.getAllMics())
     }
 
     public func callClient(_ callClient: CallClient, inputsUpdated inputs: InputSettings) {
-        if (self.selectedCam() != self._selectedCam) {
+        if self.selectedCam() != self._selectedCam {
             self._selectedCam = self.selectedCam()
             self.delegate?.onCamUpdated(cam: self._selectedCam)
         }
-        if (self.selectedMic() != self._selectedMic) {
+        if self.selectedMic() != self._selectedMic {
             self._selectedMic = self.selectedMic()
             self.delegate?.onMicUpdated(mic: self._selectedMic)
+            self.delegate?.onSpeakerUpdated(speaker: self._selectedMic)
         }
     }
 
 }
-
