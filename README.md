@@ -25,42 +25,29 @@ and add `"PipecatClientIOSDaily"` to your application/library target, `dependenc
 Instantiate a `VoiceClient` instance, wire up the bot's audio, and start the conversation:
 
 ```swift
-let clientConfigOptions = [
-    ServiceConfig(
-        service: "llm",
-        options: [
-            Option(name: "model", value: JSONValue.string("meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo")),
-            Option(name: "messages", value: JSONValue.array([
-                JSONValue.object([
-                    "role" : JSONValue.string("system"),
-                    "content": JSONValue.string("You are a assistant called ExampleBot. You can ask me anything. Keep responses brief and legible. Introduce yourself first.")
-                ])
-            ]))
-        ]
-    ),
-    ServiceConfig(
-        service: "tts",
-        options: [
-            Option(name: "voice", value: JSONValue.string("79a125e8-cd45-4c13-8a67-188112f4dd22"))
-        ]
-    )
-]
-let options = VoiceClientOptions.init(
-    services: ["llm": "together", "tts": "cartesia"],
-    config: clientConfigOptions
+let pipecatClientOptions = PipecatClientOptions.init(
+    transport: DailyTransport.init(),
+    enableMic: true,
+    enableCam: false,
 )
-
-let defaultBackendURL = "http://192.168.1.23:7860/"
-self.backendURL = defaultBackendURL
-
-let rtviClientIOS = DailyVoiceClient.init(baseUrl: defaultBackendURL, options: options)
-
-try await rtviClientIOS.start()
+let pipecatClientIOS = PipecatClient.init(
+    options: pipecatClientOptions
+)
+let startBotParams = APIRequest.init(endpoint: URL(string: baseUrl + "/connect")!)
+pipecatClientIOS?.startBotAndConnect(startBotParams: startBotParams) { (result: Result<DailyTransportConnectionParams, AsyncExecutionError>) in
+    switch result {
+    case .failure(let error):
+        // Handle error
+    case .success(_):
+        // handle success
+    }
+}
 ```
 
 ## References
 - [pipecat-client-ios reference docs](https://docs-ios.pipecat.ai/PipecatClientIOS/documentation/pipecatclientios).
 - [pipecat-client-ios SDK docs](https://docs.pipecat.ai/client/ios/introduction).
+- [SimpleChatbot example](https://github.com/pipecat-ai/pipecat-examples/tree/main/simple-chatbot/client/ios).
 
 ## Contributing
 
