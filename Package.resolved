@@ -9,15 +9,6 @@
           "revision": "14a5b65c826c526a0b9372a5d63d228a045ac4ef",
           "version": "0.35.0"
         }
-      },
-      {
-        "package": "PipecatClientIOS",
-        "repositoryURL": "https://github.com/pipecat-ai/pipecat-client-ios.git",
-        "state": {
-          "branch": null,
-          "revision": "c8c8ea62f3063173ef8ecfc00f49a3f4fe5a2c33",
-          "version": "1.1.0"
-        }
       }
     ]
   },

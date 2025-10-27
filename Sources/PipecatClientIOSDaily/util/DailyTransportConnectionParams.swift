@@ -2,7 +2,7 @@ import Foundation
 import PipecatClientIOS
 import Daily
 
-public struct DailyTransportConnectionParams: TransportConnectionParams {
+public struct DailyTransportConnectionParams: TransportConnectionParams, StartBotResult {
     let roomUrl: String
     let token: String?
     let joinSettings: ClientSettingsUpdate?
