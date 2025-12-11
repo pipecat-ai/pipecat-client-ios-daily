@@ -25,20 +25,20 @@ public class DailyTransport: Transport {
     public weak var delegate: PipecatClientDelegate?
     private var _state: TransportState = .disconnected
 
-    private lazy var localAudioLevelProcessor = AudioLevelProcessor { isSpeaking in
+    private lazy var localAudioLevelProcessor = AudioLevelProcessor { [weak self] isSpeaking in
         if isSpeaking {
-            self.delegate?.onUserStartedSpeaking()
+            self?.delegate?.onUserStartedSpeaking()
         } else {
-            self.delegate?.onUserStoppedSpeaking()
+            self?.delegate?.onUserStoppedSpeaking()
         }
     }
 
     // For the bot, when it is not speaking it looks like we always receive "0"
-    private lazy var botAudioLevelProcessor = AudioLevelProcessor(threshold: 0.001) { isSpeaking in
+    private lazy var botAudioLevelProcessor = AudioLevelProcessor(threshold: 0.001) { [weak self] isSpeaking in
         if isSpeaking {
-            self.delegate?.onBotStartedSpeaking()
+            self?.delegate?.onBotStartedSpeaking()
         } else {
-            self.delegate?.onBotStoppedSpeaking()
+            self?.delegate?.onBotStoppedSpeaking()
         }
     }
 
