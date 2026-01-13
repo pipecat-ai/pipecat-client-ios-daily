@@ -9,7 +9,7 @@ This library exports a VoiceClient that has the [Daily](https://www.daily.co/) t
 To depend on the client package, you can add this package via Xcode's package manager using the URL of this git repository directly, or you can declare your dependency in your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/pipecat-ai/pipecat-client-ios-daily.git", from: "1.1.3"),
+.package(url: "https://github.com/pipecat-ai/pipecat-client-ios-daily.git", from: "1.2.0"),
 ```
 
 and add `"PipecatClientIOSDaily"` to your application/library target, `dependencies`, e.g. like this:
