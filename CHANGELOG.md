@@ -1,8 +1,13 @@
-# Unreleased
+# 1.3.0 — 2026-07-02
+
+### Changed
+
+- Updated the `PipecatClientIOS` dependency to [1.3.0](https://github.com/pipecat-ai/pipecat-client-ios/blob/main/CHANGELOG.md#130--2026-07-02).
 
 ### Fixed
 
 - Fixed a memory leak in `DailyTransport`. `voiceClientOptions` (set in `initialize(options:)`) holds a reference to `options.transport`, which is the `DailyTransport` instance itself. `release()` now also clears `voiceClientOptions`.
+
 
 # 1.2.0 — 2026-01-13
 
