@@ -2,7 +2,7 @@
 
 ### Fixed
 
-- Fixed a memory leak in `DailyTransport`. `voiceClientOptions` (set in `initialize(options:)`) holds a reference to `options.transport`, which is the `DailyTransport` instance itself — a self-retain cycle (`DailyTransport → voiceClientOptions → transport → DailyTransport`). `release()` cleared `callClient` but never `voiceClientOptions`, so the cycle was never broken and every connect/disconnect cycle leaked a `DailyTransport` instance. `release()` now also clears `voiceClientOptions`. ([#27](https://github.com/pipecat-ai/pipecat-client-ios-daily/issues/27))
+- Fixed a memory leak in `DailyTransport`. `voiceClientOptions` (set in `initialize(options:)`) holds a reference to `options.transport`, which is the `DailyTransport` instance itself. `release()` now also clears `voiceClientOptions`.
 
 # 1.2.0 — 2026-01-13
 
